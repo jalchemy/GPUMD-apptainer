@@ -3,13 +3,11 @@
 # copies the binaries to a clean final stage.
 
 Bootstrap: docker
-From: debian:12-slim
+From: nvidia/cuda:13.0.1-devel-ubuntu24.04
 Stage: build
 
 %post
     # --- 1. Installation Phase ---
-    # This build expects the host's NVCC compiler to be available.
-    # Use the --nv flag when building with Apptainer.
     export DEBIAN_FRONTEND=noninteractive
     
     # Update apt and install build dependencies
@@ -28,6 +26,7 @@ Stage: build
     # Compile GPUMD
     cd /usr/local/gpumd/src
     make
+
 Bootstrap: docker
 From: debian:12-slim
 
@@ -39,14 +38,7 @@ From: debian:12-slim
     # Add the GPUMD binaries to the path
     export PATH="/usr/local/bin:$PATH"
 
-%runscript
-    # Execute the gpumd binary by default
-    exec gpumd "$@"
 
 %help
     This is a minimal Apptainer image for the GPUMD software.
     It is built on debian:12-slim and contains the gpumd and nep binaries.
-
-    This build expects the host\'s NVCC compiler to be available.
-    Use the --nv flag when building.
-
