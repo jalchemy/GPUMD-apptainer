@@ -1,7 +1,20 @@
 #!/bin/bash
 
+# Default CUDA SM architecture
+CUDA_SM_ARCH=89
+
+# Parse command-line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --cuda_arch) CUDA_SM_ARCH="$2"; shift ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
+
 echo "======================================="
 echo " GPUMD Apptainer Installer"
+echo " Using CUDA SM Architecture: $CUDA_SM_ARCH"
 echo "======================================="
 echo ""
 
@@ -13,10 +26,10 @@ if command -v docker &> /dev/null; then
     echo "-> Docker found, building with Docker..."
     docker run --rm --privileged \
       -v $(pwd):/work \
-      apptainer:1.4.4 build "$SIF_FILE" gpumd.def
+      apptainer:1.4.4 build --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
 else
     echo "-> Docker not found, building with Apptainer directly..."
-    apptainer build "$SIF_FILE" gpumd.def
+    apptainer build --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
 fi
 
 if [ $? -ne 0 ]; then

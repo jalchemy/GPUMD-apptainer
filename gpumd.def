@@ -6,6 +6,9 @@ Bootstrap: docker
 From: nvidia/cuda:13.0.1-devel-ubuntu24.04
 Stage: build
 
+%buildargs
+    CUDA_SM_ARCH=89
+
 %post
     # --- 1. Installation Phase ---
     export DEBIAN_FRONTEND=noninteractive
@@ -22,6 +25,9 @@ Stage: build
     # Download and extract the GPUMD source code
     wget -O /tmp/gpumd.tar.gz https://github.com/brucefan1983/GPUMD/archive/refs/tags/v3.6.tar.gz
     tar -xzvf /tmp/gpumd.tar.gz -C /usr/local/gpumd --strip-components=1
+
+    # Modify makefile to use custom CUDA architecture
+    sed -i "s/CUDA_ARCH=-arch=sm_60/CUDA_ARCH=-arch=sm_${CUDA_SM_ARCH}/g" /usr/local/gpumd/src/makefile
     
     # Compile GPUMD
     cd /usr/local/gpumd/src
