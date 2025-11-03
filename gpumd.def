@@ -6,7 +6,7 @@ Bootstrap: docker
 From: nvidia/cuda:13.0.1-devel-ubuntu24.04
 Stage: build
 
-%buildargs
+%arguments
     CUDA_SM_ARCH=89
 
 %post
