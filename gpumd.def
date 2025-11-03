@@ -1,0 +1,52 @@
+# This is a multi-stage Apptainer definition file that creates a minimal,
+# self-contained GPUMD image. It builds GPUMD in a build stage and then 
+# copies the binaries to a clean final stage.
+
+Bootstrap: docker
+From: debian:12-slim
+Stage: build
+
+%post
+    # --- 1. Installation Phase ---
+    # This build expects the host's NVCC compiler to be available.
+    # Use the --nv flag when building with Apptainer.
+    export DEBIAN_FRONTEND=noninteractive
+    
+    # Update apt and install build dependencies
+    apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        wget \
+        ca-certificates
+        
+    # Create a directory for the source code
+    mkdir -p /usr/local/gpumd
+    
+    # Download and extract the GPUMD source code
+    wget -O /tmp/gpumd.tar.gz https://github.com/brucefan1983/GPUMD/archive/refs/tags/v3.6.tar.gz
+    tar -xzvf /tmp/gpumd.tar.gz -C /usr/local/gpumd --strip-components=1
+    
+    # Compile GPUMD
+    cd /usr/local/gpumd/src
+    make
+Bootstrap: docker
+From: debian:12-slim
+
+%files from build
+    /usr/local/gpumd/src/gpumd /usr/local/bin/
+    /usr/local/gpumd/src/nep /usr/local/bin/
+
+%environment
+    # Add the GPUMD binaries to the path
+    export PATH="/usr/local/bin:$PATH"
+
+%runscript
+    # Execute the gpumd binary by default
+    exec gpumd "$@"
+
+%help
+    This is a minimal Apptainer image for the GPUMD software.
+    It is built on debian:12-slim and contains the gpumd and nep binaries.
+
+    This build expects the host\'s NVCC compiler to be available.
+    Use the --nv flag when building.
+
