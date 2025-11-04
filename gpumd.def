@@ -23,12 +23,13 @@ Stage: build
     mkdir -p /usr/local/gpumd
     
     # Download and extract the GPUMD source code
-    wget -O /tmp/gpumd.tar.gz https://github.com/brucefan1983/GPUMD/archive/refs/tags/v3.6.tar.gz
+    wget -O /tmp/gpumd.tar.gz https://github.com/brucefan1983/GPUMD/archive/refs/tags/v4.5.tar.gz
     tar -xzvf /tmp/gpumd.tar.gz -C /usr/local/gpumd --strip-components=1
 
     # Modify makefile to use custom CUDA architecture
-    sed -i "s/CUDA_ARCH=sm_60/CUDA_ARCH=sm_{{ CUDA_SM_ARCH }}/g" /usr/local/gpumd/src/makefile
-    
+    # grep CUDA_ARCH /usr/local/gpumd/src/makefile
+    sed -i "s/CUDA_ARCH=-arch=sm_60/CUDA_ARCH=-arch=sm_{{ CUDA_SM_ARCH }}/g" /usr/local/gpumd/src/makefile
+    grep CUDA_ARCH /usr/local/gpumd/src/makefile
     # Compile GPUMD
     cd /usr/local/gpumd/src
     make
