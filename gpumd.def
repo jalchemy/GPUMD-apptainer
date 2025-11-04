@@ -12,26 +12,39 @@ Stage: build
 %post
     # --- 1. Installation Phase ---
     export DEBIAN_FRONTEND=noninteractive
-    
-    # Update apt and install build dependencies
-    apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        wget \
-        ca-certificates
-        
-    # Create a directory for the source code
-    mkdir -p /usr/local/gpumd
-    
-    # Download and extract the GPUMD source code
-    wget -O /tmp/gpumd.tar.gz https://github.com/brucefan1983/GPUMD/archive/refs/tags/v4.5.tar.gz
-    tar -xzvf /tmp/gpumd.tar.gz -C /usr/local/gpumd --strip-components=1
 
-    # Modify makefile to use custom CUDA architecture
-    sed -i "s/CUDA_ARCH=-arch=sm_60/CUDA_ARCH=-arch=sm_{{ CUDA_SM_ARCH }}/g" /usr/local/gpumd/src/makefile
-    sed -i 's/-std=c++14/-std=c++17/g' /usr/local/gpumd/src/makefile
-    # Compile GPUMD
-    cd /usr/local/gpumd/src
-    make
+    # Check for cached binaries
+    if [ -f "/work/cache/gpumd" ] && [ -f "/work/cache/nep" ]; then
+        echo "--> Found cached binaries. Skipping compilation."
+        mkdir -p /usr/local/gpumd/src
+        cp /work/cache/gpumd /usr/local/gpumd/src/
+        cp /work/cache/nep /usr/local/gpumd/src/
+    else
+        echo "--> No cached binaries found. Compiling from source."
+        # Update apt and install build dependencies
+        apt-get update && apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            ca-certificates
+            
+        # Create a directory for the source code
+        mkdir -p /usr/local/gpumd
+        
+        # Download and extract the GPUMD source code
+        wget -O /tmp/gpumd.tar.gz https://github.com/brucefan1983/GPUMD/archive/refs/tags/v4.5.tar.gz
+        tar -xzvf /tmp/gpumd.tar.gz -C /usr/local/gpumd --strip-components=1
+        # Modify makefile to use custom CUDA architecture
+        sed -i "s/CUDA_ARCH=-arch=sm_60/CUDA_ARCH=-arch=sm_{{ CUDA_SM_ARCH }}/g" /usr/local/gpumd/src/makefile
+        sed -i 's/-std=c++14/-std=c++17/g' /usr/local/gpumd/src/makefile
+        
+        # Compile GPUMD
+        cd /usr/local/gpumd/src
+        make
+
+        # Cache the compiled binaries
+        mkdir -p /work/cache
+        cp gpumd nep /work/cache/
+    fi
 
 Bootstrap: docker
 From: debian:12-slim

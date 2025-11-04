@@ -29,7 +29,7 @@ if command -v docker &> /dev/null; then
       apptainer:1.4.4 build --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
 else
     echo "-> Docker not found, building with Apptainer directly..."
-    apptainer build --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
+    apptainer build --ignore-subuid --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
 fi
 
 if [ $? -ne 0 ]; then
