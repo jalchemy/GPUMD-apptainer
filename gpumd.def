@@ -27,9 +27,8 @@ Stage: build
     tar -xzvf /tmp/gpumd.tar.gz -C /usr/local/gpumd --strip-components=1
 
     # Modify makefile to use custom CUDA architecture
-    # grep CUDA_ARCH /usr/local/gpumd/src/makefile
     sed -i "s/CUDA_ARCH=-arch=sm_60/CUDA_ARCH=-arch=sm_{{ CUDA_SM_ARCH }}/g" /usr/local/gpumd/src/makefile
-    grep CUDA_ARCH /usr/local/gpumd/src/makefile
+    sed -i 's/-std=c++14/-std=c++17/g' /usr/local/gpumd/src/makefile
     # Compile GPUMD
     cd /usr/local/gpumd/src
     make
