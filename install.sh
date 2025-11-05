@@ -18,7 +18,11 @@ echo " Using CUDA SM Architecture: $CUDA_SM_ARCH"
 echo "======================================="
 echo ""
 
-# --- 1. Build the Apptainer Image ---
+# --- 1. Create Cache Directory ---
+APPTAINER_CACHE_DIR="$HOME/.apptainer_cache"
+mkdir -p "$APPTAINER_CACHE_DIR"
+
+# --- 2. Build the Apptainer Image ---
 echo "--- Building Container ---"
 SIF_FILE="gpumd.sif"
 
@@ -26,6 +30,8 @@ if command -v docker &> /dev/null; then
     echo "-> Docker found, building with Docker..."
     docker run --rm --privileged \
       -v $(pwd):/work \
+      -v "$APPTAINER_CACHE_DIR":/cache \
+      -e APPTAINER_CACHEDIR=/cache \
       apptainer:1.4.4 build --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
 else
     echo "-> Docker not found, building with Apptainer directly..."
@@ -40,7 +46,7 @@ else
 fi
 echo ""
 
-# --- 2. Create Symbolic Links ---
+# --- 3. Create Symbolic Links ---
 echo "--- Creating Symbolic Links ---"
 INSTALL_DIR="$HOME/.local/bin"
 echo "-> Creating symbolic links in $INSTALL_DIR..."
@@ -52,7 +58,7 @@ ln -sf "$SCRIPT_PATH" "$INSTALL_DIR/nep"
 echo "-> Symbolic links created."
 echo ""
 
-# --- 3. Update PATH ---
+# --- 4. Update PATH ---
 echo "--- Updating PATH ---"
 BIN_DIR="$HOME/.local/bin"
 BASHRC_FILE="$HOME/.bashrc"

@@ -1,7 +1,6 @@
 # This is a multi-stage Apptainer definition file that creates a minimal,
 # self-contained GPUMD image. It builds GPUMD in a build stage and then 
 # copies the binaries to a clean final stage.
-
 Bootstrap: docker
 From: nvidia/cuda:13.0.1-devel-ubuntu24.04
 Stage: build
@@ -12,13 +11,14 @@ Stage: build
 %post
     # --- 1. Installation Phase ---
     export DEBIAN_FRONTEND=noninteractive
-
-    # Check for cached binaries
-    if [ -f "/work/cache/gpumd" ] && [ -f "/work/cache/nep" ]; then
-        echo "--> Found cached binaries. Skipping compilation."
+    # Check for cached binaries and libs
+    if [ -f "/work/cache/gpumd" ] && [ -f "/work/cache/nep" ] && [ -d "/work/cache/libs" ]; then
+        echo "--> Found cached binaries and libs. Skipping compilation."
         mkdir -p /usr/local/gpumd/src
+        mkdir -p /usr/local/gpumd/libs
         cp /work/cache/gpumd /usr/local/gpumd/src/
         cp /work/cache/nep /usr/local/gpumd/src/
+        cp -r /work/cache/libs/* /usr/local/gpumd/libs/
     else
         echo "--> No cached binaries found. Compiling from source."
         # Update apt and install build dependencies
@@ -33,6 +33,7 @@ Stage: build
         # Download and extract the GPUMD source code
         wget -O /tmp/gpumd.tar.gz https://github.com/brucefan1983/GPUMD/archive/refs/tags/v4.5.tar.gz
         tar -xzvf /tmp/gpumd.tar.gz -C /usr/local/gpumd --strip-components=1
+        
         # Modify makefile to use custom CUDA architecture
         sed -i "s/CUDA_ARCH=-arch=sm_60/CUDA_ARCH=-arch=sm_{{ CUDA_SM_ARCH }}/g" /usr/local/gpumd/src/makefile
         sed -i 's/-std=c++14/-std=c++17/g' /usr/local/gpumd/src/makefile
@@ -41,22 +42,30 @@ Stage: build
         cd /usr/local/gpumd/src
         make
 
-        # Cache the compiled binaries
+        # Identify and copy CUDA libraries, excluding system libraries
+        mkdir -p /usr/local/gpumd/libs
+        ldd gpumd | grep "=>" | awk '{print $3}' | grep -vE "^/lib|^/usr/lib" | xargs -I '{}' cp -L '{}' /usr/local/gpumd/libs/
+        ldd nep | grep "=>" | awk '{print $3}' | grep -vE "^/lib|^/usr/lib" | xargs -I '{}' cp -L '{}' /usr/local/gpumd/libs/
+
+        # Cache the compiled binaries and libs
         mkdir -p /work/cache
         cp gpumd nep /work/cache/
+        cp -r /usr/local/gpumd/libs /work/cache/
     fi
 
 Bootstrap: docker
-From: debian:12-slim
+From: debian:13-slim
 
 %files from build
     /usr/local/gpumd/src/gpumd /usr/local/bin/
     /usr/local/gpumd/src/nep /usr/local/bin/
+    /usr/local/gpumd/libs /usr/local/lib/gpumd
 
 %environment
     # Add the GPUMD binaries to the path
     export PATH="/usr/local/bin:$PATH"
-
+    # Add the GPUMD libraries to the library path
+    export LD_LIBRARY_PATH="/usr/local/lib/gpumd:$LD_LIBRARY_PATH"
 
 %help
     This is a minimal Apptainer image for the GPUMD software.

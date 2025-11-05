@@ -18,4 +18,4 @@ fi
 # The docker command to run apptainer
 docker run --rm --privileged \
   -v $(pwd):/work \
-  apptainer:1.4.4 apptainer exec --nv "$SIF_FILE" "$COMMAND" "$@"
+  apptainer:1.4.4 exec --nv "/work/gpumd.sif" "$COMMAND" "$@"
