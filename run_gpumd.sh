@@ -15,7 +15,13 @@ if [ ! -f "$SIF_FILE" ]; then
     exit 1
 fi
 
-# The docker command to run apptainer
-docker run --rm --privileged \
-  -v $(pwd):/work \
-  apptainer:1.4.4 exec --nv "/work/gpumd.sif" "$COMMAND" "$@"
+# Check if docker is available
+if command -v docker &> /dev/null; then
+    # The docker command to run apptainer
+    docker run --rm --privileged \
+      -v $(pwd):/work \
+      apptainer:1.4.4 exec --nv "/work/gpumd.sif" "$COMMAND" "$@"
+else
+    # The bare apptainer command
+    apptainer exec --nv "$SIF_FILE" "$COMMAND" "$@"
+fi
