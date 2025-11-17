@@ -17,3 +17,11 @@
 
 # Log files created by default by the nohup command
 nohup.out
+
+# Shared object libraries
+*.so.*
+
+# Packages
+*.deb
+
+build_artifacts/*
