@@ -18,24 +18,52 @@ echo " Using CUDA SM Architecture: $CUDA_SM_ARCH"
 echo "======================================="
 echo ""
 
-# --- 1. Create Cache Directory ---
+# --- 1. Create Local Dirs ---
 APPTAINER_CACHE_DIR="$HOME/.apptainer_cache"
+ARTIFACTS_DIR="$(pwd)/build_artifacts"
 mkdir -p "$APPTAINER_CACHE_DIR"
+mkdir -p "$ARTIFACTS_DIR"
 
-# --- 2. Build the Apptainer Image ---
+# --- 2. Generate NVIDIA Library List for Docker ---
+echo "--- Generating NVIDIA Library List for Docker ---"
+GENERATED_NVLIBLIST_FILE="$(pwd)/generated.nvliblist.conf"
+DOCKER_NV_ARGS=""
+
+if command -v docker &> /dev/null; then
+    echo "-> Discovering GPU libraries inside Docker NVIDIA runtime..."
+    # Find all libraries with 'nvidia' or 'cuda' in their path from ldconfig
+    docker run --rm --runtime=nvidia --gpus=all apptainer:1.4.4.deb13slim ldconfig -p | \
+        grep -E 'libnvidia|libcuda' | \
+        awk 'NF>1 {print $NF}' > "$GENERATED_NVLIBLIST_FILE"
+
+    if [ -s "$GENERATED_NVLIBLIST_FILE" ]; then
+        echo "-> Successfully generated library list."
+        DOCKER_NV_ARGS="-v $GENERATED_NVLIBLIST_FILE:/etc/apptainer/nvliblist.conf:ro"
+    else
+        echo "-> WARNING: Failed to generate NVIDIA library list. GPU support may not work."
+    fi
+else
+    echo "-> Docker not found, skipping library list generation."
+fi
+echo ""
+
+
+# --- 3. Build the Apptainer Image ---
 echo "--- Building Container ---"
 SIF_FILE="gpumd.sif"
 
 if command -v docker &> /dev/null; then
     echo "-> Docker found, building with Docker..."
-    docker run --rm --privileged \
+    docker run --rm --runtime=nvidia --gpus=all --privileged \
+      $DOCKER_NV_ARGS \
       -v $(pwd):/work \
       -v "$APPTAINER_CACHE_DIR":/cache \
+      -v "$ARTIFACTS_DIR":/artifacts \
       -e APPTAINER_CACHEDIR=/cache \
-      apptainer:1.4.4 build --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
+      apptainer:1.4.4.deb13slim apptainer build --ignore-subuid --bind "/artifacts:/tmp/artifacts" --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
 else
     echo "-> Docker not found, building with Apptainer directly..."
-    apptainer build --ignore-subuid --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
+    apptainer build --ignore-subuid --bind "/artifacts:/tmp/artifacts" --build-arg "CUDA_SM_ARCH=$CUDA_SM_ARCH" "$SIF_FILE" gpumd.def
 fi
 
 if [ $? -ne 0 ]; then

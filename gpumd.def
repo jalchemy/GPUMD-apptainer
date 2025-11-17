@@ -12,13 +12,13 @@ Stage: build
     # --- 1. Installation Phase ---
     export DEBIAN_FRONTEND=noninteractive
     # Check for cached binaries and libs
-    if [ -f "/work/cache/gpumd" ] && [ -f "/work/cache/nep" ] && [ -d "/work/cache/libs" ]; then
+    if [ -f "/tmp/artifacts/gpumd" ] && [ -f "/tmp/artifacts/nep" ] && [ -d "/tmp/artifacts/libs" ]; then
         echo "--> Found cached binaries and libs. Skipping compilation."
         mkdir -p /usr/local/gpumd/src
         mkdir -p /usr/local/gpumd/libs
-        cp /work/cache/gpumd /usr/local/gpumd/src/
-        cp /work/cache/nep /usr/local/gpumd/src/
-        cp -r /work/cache/libs/* /usr/local/gpumd/libs/
+        cp /tmp/artifacts/gpumd /usr/local/gpumd/src/
+        cp /tmp/artifacts/nep /usr/local/gpumd/src/
+        cp -r /tmp/artifacts/libs/* /usr/local/gpumd/libs/
     else
         echo "--> No cached binaries found. Compiling from source."
         # Update apt and install build dependencies
@@ -40,26 +40,25 @@ Stage: build
         
         # Compile GPUMD
         cd /usr/local/gpumd/src
-        make
-
+        make -j8
         # Identify and copy CUDA libraries, excluding system libraries
         mkdir -p /usr/local/gpumd/libs
         ldd gpumd | grep "=>" | awk '{print $3}' | grep -vE "^/lib|^/usr/lib" | xargs -I '{}' cp -L '{}' /usr/local/gpumd/libs/
         ldd nep | grep "=>" | awk '{print $3}' | grep -vE "^/lib|^/usr/lib" | xargs -I '{}' cp -L '{}' /usr/local/gpumd/libs/
 
-        # Cache the compiled binaries and libs
-        mkdir -p /work/cache
-        cp gpumd nep /work/cache/
-        cp -r /usr/local/gpumd/libs /work/cache/
+        # Copy artifacts to host-mounted directory
+        cp gpumd /tmp/artifacts/
+        cp nep /tmp/artifacts/
+        cp -r /usr/local/gpumd/libs /tmp/artifacts/
     fi
 
 Bootstrap: docker
 From: debian:13-slim
 
-%files from build
-    /usr/local/gpumd/src/gpumd /usr/local/bin/
-    /usr/local/gpumd/src/nep /usr/local/bin/
-    /usr/local/gpumd/libs /usr/local/lib/gpumd
+%files
+    /artifacts/gpumd /usr/local/bin/
+    /artifacts/nep /usr/local/bin/
+    /artifacts/libs /usr/local/lib/gpumd
 
 %environment
     # Add the GPUMD binaries to the path
