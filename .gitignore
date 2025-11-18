@@ -24,4 +24,8 @@ nohup.out
 # Packages
 *.deb
 
+# build files
 build_artifacts/*
+
+# GPUMD output files
+*.out
