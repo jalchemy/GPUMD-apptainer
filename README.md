@@ -1,15 +1,101 @@
-# GPUMD-apptainer
-A simple build of GPUMD with Apptainer to allow reliable, portable and reproducible use across systems and projects
+# GPUMD with Apptainer
+ 
+This repository provides a simple way to build and run [GPUMD](https://github.com/brucefan1983/GPUMD) using Apptainer. This approach ensures a reliable, portable, and reproducible environment for your simulations across different systems.
+ 
+## Prerequisites
+ 
+Before you begin, ensure you have the following:
+
+*   **Apptainer:** For running the containerized application.
+    > [!NOTE]
+    > The `install.sh` script can either use Apptainer directly or within a Docker container. If Docker is detected, it
+    > will be used for the build process (since it is usually not present on HPC systems and present on end-user systems).
+*   **NVIDIA GPU and Drivers:** Required for GPUMD (as one might expect from the name). These only need to be installed on the **host** system, not within the docker or apptainer images.
+*   **Docker (Optional):** If you choose to run the Apptainer container within a Docker environment.
 
 
-### How to run container
+## Installation
 
+The `install.sh` script automates the setup process, including building the Apptainer image and creating symbolic links
+for the `gpumd` and `nep` commands so they can be run without modification from the command line and in scripts.
 
-docker run -it --privileged --runtime=nvidia  --gpus all -v $(pwd):/work --mount type=bind,src=/var/log/,dst=/var/log/
---mount type=bind,src=/etc/nvidia-container-runtime/,dst=/etc/nvidia-container-runtime/ --mount
-type=bind,src=/usr/bin/nvidia-container-cli,dst=/usr/bin/nvidia-container-cli --mount
-type=bind,src=/usr/bin/../lib/x86_64-linux-gnu/libnvidia-container.so.1,dst=/usr/bin/../lib/x86_64-linux-gnu/libnvidia-container.so.1
---mount
-type=bind,src=/usr/lib/x86_64-linux-gnu/libnvidia-container-go.so.1,dst=/usr/lib/x86_64-linux-gnu/libnvidia-container-go.so.1
-apptainer:1.4.4.deb13slim apptainer run --nvccli --bind /var/log/ --bind /etc/nvidia-container-runtime/ --bind /var/log/
---bind /usr/bin/ /work/gpumd.sif
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/GPUMD-apptainer.git
+    cd GPUMD-apptainer
+    ```
+
+2.  **Run the installation script:**
+    ```bash
+    ./install.sh
+    ```
+
+> [!TIP]
+> The CUDA architecture is set in `install.sh` as `CUDA_SM_ARCH=89` by default. To override this, you can either edit
+> `install.sh` or use the `--cuda_arch` flag:
+> ```bash
+> ./install.sh --cuda_arch 80 # e.g. for A100 GPUs
+> ```
+
+## Quick Start
+
+After successful installation, we can run a simulation. The below test uses the provided `run.in`, `nep.txt` and `model.xyz` files in the `example` directory.
+
+### Navigate to the example directory and run the simulation:
+
+```bash
+cd example
+gpumd # or gpumd <run_filename.in> if not named run.in
+```
+
+### Check the output
+
+You will see output files generated in the `example` directory, such as `dump.xyz` and `thermo.out`.
+
+## Usage
+
+### `gpumd | nep`
+
+The commands `gpumd` or `nep` are symlinks to the `run_gpumd.sh` script which parses the command and any arguments and runs them inside the `gpumd.sif` container. When you run `gpumd` or `nep`, you are actually calling this script.
+
+#### Points to note
+
+*   The script automatically detects whether to use Docker to run the Apptainer container.
+*   The current working directory is mounted into the container so that GPUMD can read input files and write results. The commands should work in any directory, however, not just ones within this repository, so there is no need to move the container image.
+
+### `run.in`
+
+This is the main input file for a GPUMD simulation. The provided `run.in` in the `example` directory is a simple example:
+
+```
+potential nep.txt  # Specifies the potential file
+time_step 0.5      # Simulation time step in fs
+
+velocity 300       # Initialize velocities at 300K
+
+ensemble nve       # Run in the NVE ensemble
+
+dump_exyz 10 1 1   # Write to output files every
+dump_position 10   # 10 steps
+dump_thermo 10
+
+run 100            # Run for 10 steps
+```
+
+> [!IMPORTANT]
+> Make sure your potential file (e.g. `nep.txt`) is in the same directory as your `run.in` file, or provide a valid path to it
+
+### `gpumd.def`
+
+This is the Apptainer definition file. It defines how the `gpumd.sif` image is built.
+
+*   It uses a multi-stage build to create a minimal final image.
+*   **Build Stage:** It compiles GPUMD from source within a `nvidia/cuda` base image.
+*   **Final Stage:** It copies the compiled binaries (`gpumd`, `nep`) and their dependencies into a clean `debian:13-slim` image.
+
+> [!NOTE]
+> You do not need to interact with this file unless you want to customize the build process, such as changing the GPUMD version or adding more dependencies.
+
+### Running with Docker
+
+If you have Docker installed, the `install.sh` and `run_gpumd.sh` scripts will automatically use it. The scripts are designed to handle the necessary volume mounts for the NVIDIA runtime and Apptainer to work correctly within Docker. This provides an extra layer of isolation and portability.
