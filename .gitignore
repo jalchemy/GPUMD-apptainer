@@ -29,3 +29,5 @@ build_artifacts/*
 
 # GPUMD output files
 *.out
+
+test/*
