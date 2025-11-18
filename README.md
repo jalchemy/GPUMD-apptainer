@@ -12,6 +12,7 @@ Before you begin, ensure you have the following:
     > will be used for the build process (since it is usually not present on HPC systems and present on end-user systems).
 *   **NVIDIA GPU and Drivers:** Required for GPUMD (as one might expect from the name). These only need to be installed on the **host** system, not within the docker or apptainer images.
 *   **Docker (Optional):** If you choose to run the Apptainer container within a Docker environment.
+*   **nvidia-container-toolkit (Optional):** Required if using Apptainer in Docker in order to pass through GPU drivers correctly. Installation instructions [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 
 ## Installation
@@ -87,15 +88,8 @@ run 100            # Run for 10 steps
 
 ### `gpumd.def`
 
-This is the Apptainer definition file. It defines how the `gpumd.sif` image is built.
+This is the Apptainer definition file. It defines how the `gpumd.sif` image is built. You do not need to interact with this file unless you want to customize the build process, such as changing the GPUMD version.
 
 *   It uses a multi-stage build to create a minimal final image.
 *   **Build Stage:** It compiles GPUMD from source within a `nvidia/cuda` base image.
 *   **Final Stage:** It copies the compiled binaries (`gpumd`, `nep`) and their dependencies into a clean `debian:13-slim` image.
-
-> [!NOTE]
-> You do not need to interact with this file unless you want to customize the build process, such as changing the GPUMD version or adding more dependencies.
-
-### Running with Docker
-
-If you have Docker installed, the `install.sh` and `run_gpumd.sh` scripts will automatically use it. The scripts are designed to handle the necessary volume mounts for the NVIDIA runtime and Apptainer to work correctly within Docker. This provides an extra layer of isolation and portability.
