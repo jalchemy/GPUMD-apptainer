@@ -1,0 +1,17 @@
+potential Song-2024-UNEP-v1-AgAlAuCrCuMgMoNiPbPdPtTaTiVWZr.txt
+
+time_step 0.5
+
+velocity 300
+
+ensemble nve
+
+mc canonical 1 4000 1000 300
+
+dump_exyz 10 1 1 
+
+dump_position 10
+
+dump_thermo 10
+
+run 100
