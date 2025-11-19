@@ -8,7 +8,7 @@ Before you begin, ensure you have the following:
 
 *   **Apptainer:** For running the containerized application.
     > [!NOTE]
-    > The `install.sh` script can either use Apptainer directly or within a Docker container. If Docker is detected, it
+    > The `install.sh` script can either use Apptainer directly or within a Docker container like [this one](https://github.com/jalchemy/apptainer-in-docker). If Docker is detected, it
     > will be used for the build process (since it is usually not present on HPC systems and present on end-user systems).
 *   **NVIDIA GPU and Drivers:** Required for GPUMD (as one might expect from the name). These only need to be installed on the **host** system, not within the docker or apptainer images.
 *   **Docker (Optional):** If you choose to run the Apptainer container within a Docker environment.
@@ -86,10 +86,5 @@ run 100            # Run for 10 steps
 > [!IMPORTANT]
 > Make sure your potential file (e.g. `nep.txt`) is in the same directory as your `run.in` file, or provide a valid path to it
 
-### `gpumd.def`
 
-This is the Apptainer definition file. It defines how the `gpumd.sif` image is built. You do not need to interact with this file unless you want to customize the build process, such as changing the GPUMD version.
-
-*   It uses a multi-stage build to create a minimal final image.
-*   **Build Stage:** It compiles GPUMD from source within a `nvidia/cuda` base image.
-*   **Final Stage:** It copies the compiled binaries (`gpumd`, `nep`) and their dependencies into a clean `debian:13-slim` image.
+For more information on the usage of GPUMD, see the [official docs](https://gpumd.org/index.html).
