@@ -29,5 +29,9 @@ build_artifacts/*
 
 # GPUMD output files
 *.out
+dump.xyz
+movie.xyz
 
 test/*
+
+*/__pycache__/*
