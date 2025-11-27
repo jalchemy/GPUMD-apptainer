@@ -25,27 +25,27 @@ mkdir -p "$APPTAINER_CACHE_DIR"
 mkdir -p "$ARTIFACTS_DIR"
 
 # --- 2. Generate NVIDIA Library List for Docker ---
-echo "--- Generating NVIDIA Library List for Docker ---"
-GENERATED_NVLIBLIST_FILE="$(pwd)/generated.nvliblist.conf"
-DOCKER_NV_ARGS=""
+# echo "--- Generating NVIDIA Library List for Docker ---"
+# GENERATED_NVLIBLIST_FILE="$(pwd)/generated.nvliblist.conf"
+# DOCKER_NV_ARGS=""
 
-if command -v docker &> /dev/null; then
-    echo "-> Discovering GPU libraries inside Docker NVIDIA runtime..."
-    # Find all libraries with 'nvidia' or 'cuda' in their path from ldconfig
-    docker run --rm --runtime=nvidia --gpus=all apptainer:1.4.4.deb13slim ldconfig -p | \
-        grep -E 'libnvidia|libcuda' | \
-        awk 'NF>1 {print $NF}' > "$GENERATED_NVLIBLIST_FILE"
+# if command -v docker &> /dev/null; then
+#     echo "-> Discovering GPU libraries inside Docker NVIDIA runtime..."
+#     # Find all libraries with 'nvidia' or 'cuda' in their path from ldconfig
+#     docker run --rm --runtime=nvidia --gpus=all apptainer:1.4.4.deb13slim ldconfig -p | \
+#         grep -E 'libnvidia|libcuda' | \
+#         awk 'NF>1 {print $NF}' > "$GENERATED_NVLIBLIST_FILE"
 
-    if [ -s "$GENERATED_NVLIBLIST_FILE" ]; then
-        echo "-> Successfully generated library list."
-        DOCKER_NV_ARGS="-v $GENERATED_NVLIBLIST_FILE:/etc/apptainer/nvliblist.conf:ro"
-    else
-        echo "-> WARNING: Failed to generate NVIDIA library list. GPU support may not work."
-    fi
-else
-    echo "-> Docker not found, skipping library list generation."
-fi
-echo ""
+#     if [ -s "$GENERATED_NVLIBLIST_FILE" ]; then
+#         echo "-> Successfully generated library list."
+#         DOCKER_NV_ARGS="-v $GENERATED_NVLIBLIST_FILE:/etc/apptainer/nvliblist.conf:ro"
+#     else
+#         echo "-> WARNING: Failed to generate NVIDIA library list. GPU support may not work."
+#     fi
+# else
+#     echo "-> Docker not found, skipping library list generation."
+# fi
+# echo ""
 
 
 # --- 3. Build the Apptainer Image ---
