@@ -1,0 +1,5 @@
+jax[cuda13]==0.8.1
+-e /home/joe/repos/jax-md/
+plotly==6.5.0
+matplotlib==3.10.7
+ase==3.26.0
